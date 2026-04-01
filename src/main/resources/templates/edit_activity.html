@@ -14,10 +14,10 @@
         .btn-ai-upload { background: var(--primary); color: #fff; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .btn-ai-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; }
         .ai-spinner { display: none; text-align: center; color: var(--text-muted); margin-top: 0.75rem; }
-        .badge-pending { background: #422006; color: #fbbf24; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
-        .badge-approved { background: #14532d; color: #4ade80; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
-        .badge-rejected { background: #450a0a; color: #f87171; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
-        .status-select { font-size: 0.88rem; padding: 0.3rem 0.6rem; border-radius: 6px; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); }
+        .badge-pending { background: #422006; color: #fbbf24; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+        .badge-approved { background: #14532d; color: #4ade80; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+        .badge-rejected { background: #450a0a; color: #f87171; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+        .status-select { font-size: 0.88rem; padding: 0.35rem 0.6rem; border-radius: 6px; background: #0f172a; color: #f8fafc; border: 1px solid var(--border); width: 100%; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 
@@ -46,11 +46,11 @@
             </div>
             <!-- HOD view: change status inline -->
             <div th:if="${isHod}">
-                <form th:action="@{/updateStatus/{id}(id=${newActivity.id})}" method="post" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                <form th:action="@{/updateStatus/{id}(id=${newActivity.id})}" method="post" style="display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; max-width: 200px;">
                     <select name="status" class="status-select">
                         <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${newActivity.status == s}"></option>
                     </select>
-                    <button type="submit" style="padding: 0.3rem 0.8rem; border-radius: 6px; background: var(--primary); color:#fff; border:none; cursor:pointer; font-size: 0.85rem;">Update Status</button>
+                    <button type="submit" style="padding: 0.3rem 0.8rem; border-radius: 6px; background: var(--primary); color:#fff; border:none; cursor:pointer; font-size: 0.85rem; width: 100%;">Update Status</button>
                 </form>
             </div>
         </div>
