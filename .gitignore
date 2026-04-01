@@ -1,0 +1,14 @@
+# Ignore Secret Files
+.env
+**/credentials.json
+
+# Ignore compiled Java files and target folders globally
+**/target/
+*.class
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+*.iml
+# Ignore Secret Files
+application-secret.properties

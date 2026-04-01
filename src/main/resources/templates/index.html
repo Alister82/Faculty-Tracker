@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <title th:text="${currentDepartment} + ' - Academic Tracking Dashboard'">Academic Tracking Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+            border-radius: 12px;
+        }
+        .nav-user { display: flex; align-items: center; gap: 0.75rem; }
+        .nav-actions { display: flex; align-items: center; gap: 0.75rem; }
+        .badge-dept { background: #1e3a5f; color: #60a5fa; padding: 0.25rem 0.65rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+        .badge-hod { background: #2d1f5e; color: #a78bfa; padding: 0.25rem 0.65rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+        .badge-pending { background: #422006; color: #fbbf24; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+        .badge-approved { background: #14532d; color: #4ade80; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+        .badge-rejected { background: #450a0a; color: #f87171; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+        .status-form { display: inline-flex; align-items: center; gap: 0.4rem; }
+        .status-select { font-size: 0.78rem; padding: 0.2rem 0.4rem; border-radius: 6px; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-status { font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 6px; background: var(--primary); color: #fff; border: none; cursor: pointer; }
+        /* AI Fill Button */
+        .ai-fill-wrapper { display: flex; justify-content: flex-end; margin-top: 0.75rem; }
+        .btn-ai-fill { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.1rem; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(99,102,241,0.25); transition: transform 0.15s, box-shadow 0.15s; }
+        .btn-ai-fill:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
+        /* AI Modal */
+        .ai-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .ai-modal-overlay.open { display: flex; }
+        .ai-modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; width: 100%; max-width: 420px; }
+        .ai-modal h3 { margin-top: 0; color: var(--text-main); }
+        .ai-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+        .btn-ai-upload { background: var(--primary); color: #fff; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
+        .btn-ai-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; }
+        .ai-spinner { display: none; text-align: center; color: var(--text-muted); margin-top: 0.75rem; }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- ─── Nav Bar ────────────────────────────────────────────────────── -->
+        <div class="nav-bar">
+            <div class="nav-user">
+                <span style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">📊 Academic Tracker</span>
+                <span th:if="${!isAdmin}" class="badge-dept" th:text="${currentDepartment}">Dept</span>
+                <span class="badge-hod" th:if="${isHod}">HOD</span>
+                <span th:if="${isAdmin}" style="background:#1a3a1f; color:#4ade80; padding:0.25rem 0.65rem; border-radius:99px; font-size:0.75rem; font-weight:600;">
+                    <a href="/profile" style="color: inherit; text-decoration: none;">ADMIN</a>
+                </span>
+            </div>
+            <div class="nav-actions">
+                <span style="color: var(--text-muted); font-size: 0.88rem;">👤 <span th:text="${currentUsername}"></span></span>
+                <a th:if="${isAdmin}" href="/admin" style="color: #4ade80; font-size: 0.88rem; text-decoration: none; font-weight: 600;">🛡️ Admin Panel</a>
+                <a href="/profile" style="color: var(--primary); font-size: 0.88rem; text-decoration: none; font-weight: 500;">Profile</a>
+                <form th:action="@{/logout}" method="post" style="margin: 0;">
+                    <button type="submit" class="btn-clear" style="font-size: 0.88rem;">Logout</button>
+                </form>
+            </div>
+        </div>
+
+        <h2 style="font-size: 1.875rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
+            <span th:text="${currentDepartment + ' Academic Tracking Dashboard'}">📊 Academic Tracking Dashboard</span>
+        </h2>
+
+        <!-- ─── Search ──────────────────────────────────────────────────────── -->
+        <div class="search-box">
+            <div class="search-method">
+                <h3>🔍 Search by Category</h3>
+                <form th:action="@{/}" method="get" class="search-form-group">
+                    <input type="hidden" name="searchType" value="method1">
+                    <div style="flex: 0.5;">
+                        <select name="typeFilter" required>
+                            <option value="FDP">FDP</option>
+                            <option value="Workshop">Workshop</option>
+                            <option value="Conference">Conference</option>
+                            <option value="Publication">Publication</option>
+                        </select>
+                    </div>
+                    <div><input type="text" name="keyword" placeholder="Search Title or Name..."></div>
+                    <button type="submit">Search</button>
+                </form>
+            </div>
+            <div class="search-method">
+                <h3>⚙️ Advanced Search</h3>
+                <form th:action="@{/}" method="get" id="advSearchForm">
+                    <input type="hidden" name="searchType" value="method2">
+                    <div id="advTypesHidden"></div>
+                    <div class="search-form-group" style="margin-bottom: 0.75rem;">
+                        <div><input type="text" name="advFaculty" placeholder="Faculty Name"></div>
+                        <div><input type="text" name="advYear" placeholder="Year (e.g. 2026)"></div>
+                    </div>
+                    <div class="adv-bottom-row">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="advNittt" name="advNittt" value="true">
+                            <label for="advNittt">NITTT Certified</label>
+                        </div>
+                        <div class="filter-wrapper" style="position:relative;">
+                            <button type="button" id="filterBtn" class="btn-filter" onclick="toggleFilter()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                </svg> Filter <span id="filterBadge" class="filter-badge" style="display:none;">0</span>
+                            </button>
+                            <div id="filterPanel" class="filter-panel" style="display:none;">
+                                <div class="filter-panel-header">
+                                    <span>Category</span>
+                                    <button type="button" class="btn-filter-clear" onclick="clearFilter()">Clear</button>
+                                </div>
+                                <div class="filter-options">
+                                    <label class="filter-option"><input type="checkbox" class="filter-cb" value="FDP" checked> FDP</label>
+                                    <label class="filter-option"><input type="checkbox" class="filter-cb" value="Workshop" checked> Workshop</label>
+                                    <label class="filter-option"><input type="checkbox" class="filter-cb" value="Conference" checked> Conference</label>
+                                    <label class="filter-option"><input type="checkbox" class="filter-cb" value="Publication" checked> Publication</label>
+                                </div>
+                                <button type="button" class="btn-filter-apply" onclick="applyFilter()">Apply</button>
+                            </div>
+                        </div>
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+
+            <div th:if="${isSearch}" style="width: 100%; display: flex; align-items: center; gap: 0.75rem; justify-content: flex-end; margin-top: 15px; margin-bottom: 25px;">
+                <a th:href="@{/download/search/word(searchType=${searchType}, typeFilter=${typeFilter}, keyword=${keyword}, advFaculty=${advFaculty}, advYear=${advYear}, advNittt=${advNittt}, advTypes=${advTypes})}"
+                    style="background-color: #6366f1; color: #ffffff; padding: 0.5rem 1.25rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.5rem; border: none; cursor: pointer; transition: opacity 0.2s;"
+                    onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    📥 Download Search Results
+                </a>
+                <a href="/" class="btn-clear" style="text-decoration: none; display: inline-flex; align-items: center;">✖ Clear Search Results</a>
+            </div>
+        </div>
+
+        <!-- ─── Search Results ─────────────────────────────────────────────── -->
+        <div th:if="${isSearch}" class="card">
+            <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 1.5rem;">✨ Search Results
+                <span class="badge badge-gray" th:text="'(' + ${searchResults.size()} + ' records)'" style="font-size:0.8rem;"></span>
+            </h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr>
+                        <th>Type</th><th>Faculty</th><th>Title</th><th>Date</th><th>Status</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr th:each="act : ${searchResults}">
+                            <td><span class="badge badge-gray" th:text="${act.activityType}"></span></td>
+                            <td th:text="${act.facultyName}" style="font-weight: 500; color: var(--text-main);"></td>
+                            <td th:text="${act.title}"></td>
+                            <td th:text="${act.date}"></td>
+                            <td th:include="this :: statusCell(${act})"></td>
+                            <td class="action-links">
+                                <a th:if="${act.certificateUrl != null and !act.certificateUrl.isEmpty()}" th:href="${act.certificateUrl}" target="_blank" class="view-cert-link">☁️ View Cert</a>
+                                <a class="edit-link" th:href="@{/edit/{id}(id=${act.id})}">Edit</a>
+                                <a class="delete-link" th:href="@{/delete/{id}(id=${act.id})}" onclick="return confirm('Delete this record?');">Delete</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ─── Tabs ──────────────────────────────────────────────────────── -->
+        <div th:unless="${isSearch}" class="card">
+            <div class="tab">
+                <button class="tablinks" onclick="openTab(event, 'FDP')" id="defaultOpen">FDP</button>
+                <button class="tablinks" onclick="openTab(event, 'Workshop')">Workshop</button>
+                <button class="tablinks" onclick="openTab(event, 'Conference')">Conference</button>
+                <button class="tablinks" onclick="openTab(event, 'Publication')">Publication</button>
+            </div>
+
+            <!-- ── FDP Tab ──────────────────────────────────────────────── -->
+            <div id="FDP" class="tabcontent">
+                <div class="form-header">
+                    <form th:action="@{/save}" th:object="${newActivity}" method="post" enctype="multipart/form-data" id="fdpForm">
+                        <input type="hidden" name="activityType" value="FDP">
+                        <div class="form-grid">
+                            <div th:if="${isHod}" class="form-group"><label>Faculty/Resource Person Name</label><input type="text" name="facultyName" id="fdp_facultyName" placeholder="Enter name"></div>
+                            <div class="form-group"><label>Name/Title of FDP</label><input type="text" name="title" id="fdp_title" placeholder="Enter title" required></div>
+                            <div class="form-group"><label>Host College/Institute</label><input type="text" name="hostInstitute" id="fdp_hostInstitute" placeholder="Enter host" required></div>
+                            <div class="form-group"><label>Date</label><input type="date" name="date" id="fdp_date" required></div>
+                            <div class="form-group"><label>Host Place</label><input type="text" name="location" id="fdp_location" placeholder="Enter place" required></div>
+                            <div class="form-group"><label>Duration</label><input type="text" name="duration" id="fdp_duration" placeholder="e.g. 1 week, 2 days" required></div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Upload Certificate (Image or PDF)</label>
+                                <input type="file" name="certificateFile" class="file-input" accept="image/*,application/pdf">
+                            </div>
+                        </div>
+                        <div class="checkbox-container" style="margin-bottom: 1rem;">
+                            <input type="checkbox" id="nitttCheckFdp" name="nitttCertified" value="true">
+                            <label for="nitttCheckFdp">NITTT Certified FDP</label>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                            <button type="submit" class="btn-success">Save FDP Record</button>
+                            <button type="button" class="btn-ai-fill" onclick="openAiModal('fdp')">✨ AI Fill</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="db-toggle-bar">
+                    <button type="button" class="btn-db-toggle" onclick="toggleTable('fdpTableSection', this)">📋 View Database</button>
+                </div>
+                <div id="fdpTableSection" class="db-section" style="display:none;">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr>
+                                <th>Faculty</th><th>FDP Title</th><th>Host</th><th>Date</th><th>Place</th><th>Duration</th><th>NITTT</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr th:each="act : ${fdpList}">
+                                    <td th:text="${act.facultyName}" style="font-weight: 500; color: var(--text-main);"></td>
+                                    <td th:text="${act.title}"></td>
+                                    <td th:text="${act.hostInstitute}"></td>
+                                    <td th:text="${act.date}"></td>
+                                    <td th:text="${act.location}"></td>
+                                    <td th:text="${act.duration}"></td>
+                                    <td><span th:text="${act.nitttCertified ? '✓ Yes' : '-'}" th:class="${act.nitttCertified ? 'text-success' : 'text-muted'}"></span></td>
+                                    <td>
+                                        <div th:if="${isHod}">
+                                            <form th:action="@{/updateStatus/{id}(id=${act.id})}" method="post" class="status-form">
+                                                <select name="status" class="status-select">
+                                                    <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${act.status == s}"></option>
+                                                </select>
+                                                <button type="submit" class="btn-status">✓</button>
+                                            </form>
+                                        </div>
+                                        <div th:unless="${isHod}">
+                                            <span th:if="${act.status == null}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'PENDING'}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'APPROVED'}" class="badge-approved">✓ APPROVED</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'REJECTED'}" class="badge-rejected">✗ REJECTED</span>
+                                        </div>
+                                    </td>
+                                    <td class="action-links">
+                                        <a th:if="${act.certificateUrl != null and !act.certificateUrl.isEmpty()}" th:href="${act.certificateUrl}" target="_blank" class="view-cert-link">☁️ View Cert</a>
+                                        <a class="edit-link" th:href="@{/edit/{id}(id=${act.id})}">Edit</a>
+                                        <a class="delete-link" th:href="@{/delete/{id}(id=${act.id})}" onclick="return confirm('Delete this record?');">Delete</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="db-download-bar"><a th:href="@{/download/word(type='FDP')}" class="btn-download">⬇ Download as Word</a></div>
+                </div>
+            </div>
+
+            <!-- ── Workshop Tab ─────────────────────────────────────────── -->
+            <div id="Workshop" class="tabcontent">
+                <div class="form-header">
+                    <form th:action="@{/save}" th:object="${newActivity}" method="post" enctype="multipart/form-data" id="workshopForm">
+                        <input type="hidden" name="activityType" value="Workshop">
+                        <div class="form-grid">
+                            <div th:if="${isHod}" class="form-group"><label>Faculty Name</label><input type="text" name="facultyName" id="ws_facultyName" placeholder="Enter faculty name"></div>
+                            <div class="form-group"><label>Workshop Title</label><input type="text" name="title" id="ws_title" placeholder="Enter workshop title" required></div>
+                            <div class="form-group"><label>Date</label><input type="date" name="date" id="ws_date" required></div>
+                            <div class="form-group"><label>Location/Venue</label><input type="text" name="location" id="ws_location" placeholder="Enter venue" required></div>
+                            <div class="form-group"><label>Host Institute</label><input type="text" name="hostInstitute" id="ws_hostInstitute" placeholder="Enter host institute" required></div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Upload Certificate (Image or PDF)</label>
+                                <input type="file" name="certificateFile" class="file-input" accept="image/*,application/pdf">
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem;">
+                            <button type="submit" class="btn-success">Save Workshop Record</button>
+                            <button type="button" class="btn-ai-fill" onclick="openAiModal('ws')">✨ AI Fill</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="db-toggle-bar">
+                    <button type="button" class="btn-db-toggle" onclick="toggleTable('workshopTableSection', this)">📋 View Database</button>
+                </div>
+                <div id="workshopTableSection" class="db-section" style="display:none;">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr>
+                                <th>Faculty Name</th><th>Title</th><th>Date</th><th>Venue</th><th>Host</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr th:each="act : ${workshopList}">
+                                    <td th:text="${act.facultyName}" style="font-weight: 500; color: var(--text-main);"></td>
+                                    <td th:text="${act.title}"></td>
+                                    <td th:text="${act.date}"></td>
+                                    <td th:text="${act.location}"></td>
+                                    <td th:text="${act.hostInstitute}"></td>
+                                    <td>
+                                        <div th:if="${isHod}">
+                                            <form th:action="@{/updateStatus/{id}(id=${act.id})}" method="post" class="status-form">
+                                                <select name="status" class="status-select">
+                                                    <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${act.status == s}"></option>
+                                                </select>
+                                                <button type="submit" class="btn-status">✓</button>
+                                            </form>
+                                        </div>
+                                        <div th:unless="${isHod}">
+                                            <span th:if="${act.status == null}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'PENDING'}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'APPROVED'}" class="badge-approved">✓ APPROVED</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'REJECTED'}" class="badge-rejected">✗ REJECTED</span>
+                                        </div>
+                                    </td>
+                                    <td class="action-links">
+                                        <a th:if="${act.certificateUrl != null and !act.certificateUrl.isEmpty()}" th:href="${act.certificateUrl}" target="_blank" class="view-cert-link">☁️ View Cert</a>
+                                        <a class="edit-link" th:href="@{/edit/{id}(id=${act.id})}">Edit</a>
+                                        <a class="delete-link" th:href="@{/delete/{id}(id=${act.id})}" onclick="return confirm('Delete this record?');">Delete</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="db-download-bar"><a th:href="@{/download/word(type='Workshop')}" class="btn-download">⬇ Download as Word</a></div>
+                </div>
+            </div>
+
+            <!-- ── Conference Tab ───────────────────────────────────────── -->
+            <div id="Conference" class="tabcontent">
+                <div class="form-header">
+                    <form th:action="@{/save}" th:object="${newActivity}" method="post" enctype="multipart/form-data" id="confForm">
+                        <input type="hidden" name="activityType" value="Conference">
+                        <div class="form-grid">
+                            <div th:if="${isHod}" class="form-group"><label>Faculty Name</label><input type="text" name="facultyName" id="conf_facultyName" placeholder="Enter faculty name"></div>
+                            <div class="form-group"><label>Conference Title</label><input type="text" name="title" id="conf_title" placeholder="Enter title" required></div>
+
+                            <div class="form-group"><label>Date</label><input type="date" name="date" id="conf_date" required></div>
+                            <div class="form-group"><label>Duration</label><input type="text" name="duration" id="conf_duration" placeholder="e.g. 2 days" required></div>
+                            <div class="form-group"><label>Host Institute</label><input type="text" name="hostInstitute" id="conf_hostInstitute" placeholder="Enter host" required></div>
+                            <div class="form-group"><label>Location</label><input type="text" name="location" id="conf_location" placeholder="Enter location" required></div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Upload Certificate (Image or PDF)</label>
+                                <input type="file" name="certificateFile" class="file-input" accept="image/*,application/pdf">
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem;">
+                            <button type="submit" class="btn-success">Save Conference Record</button>
+                            <button type="button" class="btn-ai-fill" onclick="openAiModal('conf')">✨ AI Fill</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="db-toggle-bar">
+                    <button type="button" class="btn-db-toggle" onclick="toggleTable('conferenceTableSection', this)">📋 View Database</button>
+                </div>
+                <div id="conferenceTableSection" class="db-section" style="display:none;">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr>
+                                <th>Conference Title</th><th>Faculty</th><th>Date</th><th>Duration</th><th>Host</th><th>Location</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr th:each="act : ${conferenceList}">
+                                    <td th:text="${act.title}"></td>
+                                    <td th:text="${act.facultyName}" style="font-weight: 500; color: var(--text-main);"></td>
+                                    <td th:text="${act.date}"></td>
+                                    <td th:text="${act.duration}"></td>
+                                    <td th:text="${act.hostInstitute}"></td>
+                                    <td th:text="${act.location}"></td>
+                                    <td>
+                                        <div th:if="${isHod}">
+                                            <form th:action="@{/updateStatus/{id}(id=${act.id})}" method="post" class="status-form">
+                                                <select name="status" class="status-select">
+                                                    <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${act.status == s}"></option>
+                                                </select>
+                                                <button type="submit" class="btn-status">✓</button>
+                                            </form>
+                                        </div>
+                                        <div th:unless="${isHod}">
+                                            <span th:if="${act.status == null}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'PENDING'}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'APPROVED'}" class="badge-approved">✓ APPROVED</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'REJECTED'}" class="badge-rejected">✗ REJECTED</span>
+                                        </div>
+                                    </td>
+                                    <td class="action-links">
+                                        <a th:if="${act.certificateUrl != null and !act.certificateUrl.isEmpty()}" th:href="${act.certificateUrl}" target="_blank" class="view-cert-link">☁️ View Cert</a>
+                                        <a class="edit-link" th:href="@{/edit/{id}(id=${act.id})}">Edit</a>
+                                        <a class="delete-link" th:href="@{/delete/{id}(id=${act.id})}" onclick="return confirm('Delete this record?');">Delete</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="db-download-bar"><a th:href="@{/download/word(type='Conference')}" class="btn-download">⬇ Download as Word</a></div>
+                </div>
+            </div>
+
+            <!-- ── Publication Tab ──────────────────────────────────────── -->
+            <div id="Publication" class="tabcontent">
+                <div class="form-header">
+                    <form th:action="@{/save}" th:object="${newActivity}" method="post">
+                        <input type="hidden" name="activityType" value="Publication">
+                        <div class="form-grid">
+                            <div th:if="${isHod}" class="form-group"><label>Faculty Name</label><input type="text" name="facultyName" id="pub_facultyName" placeholder="Enter faculty name"></div>
+                            <div class="form-group"><label>Paper Title</label><input type="text" name="title" id="pub_title" placeholder="Enter paper title" required></div>
+
+                            <div class="form-group"><label>Journal Name</label><input type="text" name="journalName" id="pub_journalName" placeholder="Enter journal name" required></div>
+                            <div class="form-group"><label>Date</label><input type="date" name="date" id="pub_date" required></div>
+                            <div class="form-group">
+                                <label>Journal Type</label>
+                                <select name="journalType" id="pub_journalType" required>
+                                    <option value="" disabled selected>Select Journal Type...</option>
+                                    <option value="SC">SC</option>
+                                    <option value="Book Chapter">Book Chapter</option>
+                                    <option value="UGC">UGC</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Level</label>
+                                <select name="publicationLevel" id="pub_publicationLevel" required>
+                                    <option value="" disabled selected>Select Level...</option>
+                                    <option value="National">National</option>
+                                    <option value="International">International</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem;">
+                            <button type="submit" class="btn-success">Save Publication Record</button>
+                            <button type="button" class="btn-ai-fill" onclick="openAiModal('pub')">✨ AI Fill</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="db-toggle-bar">
+                    <button type="button" class="btn-db-toggle" onclick="toggleTable('publicationTableSection', this)">📋 View Database</button>
+                </div>
+                <div id="publicationTableSection" class="db-section" style="display:none;">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr>
+                                <th>Paper Title</th><th>Faculty</th><th>Journal</th><th>Date</th><th>Type</th><th>Level</th><th>Status</th><th>Actions</th>
+                            </tr></thead>
+                            <tbody>
+                                <tr th:each="act : ${publicationList}">
+                                    <td th:text="${act.title}"></td>
+                                    <td th:text="${act.facultyName}" style="font-weight: 500; color: var(--text-main);"></td>
+                                    <td th:text="${act.journalName}"></td>
+                                    <td th:text="${act.date}"></td>
+                                    <td><span class="badge badge-gray" th:text="${act.journalType}"></span></td>
+                                    <td><span class="badge badge-primary" th:text="${act.publicationLevel}"></span></td>
+                                    <td>
+                                        <div th:if="${isHod}">
+                                            <form th:action="@{/updateStatus/{id}(id=${act.id})}" method="post" class="status-form">
+                                                <select name="status" class="status-select">
+                                                    <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${act.status == s}"></option>
+                                                </select>
+                                                <button type="submit" class="btn-status">✓</button>
+                                            </form>
+                                        </div>
+                                        <div th:unless="${isHod}">
+                                            <span th:if="${act.status == null}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'PENDING'}" class="badge-pending">PENDING</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'APPROVED'}" class="badge-approved">✓ APPROVED</span>
+                                            <span th:if="${act.status != null and act.status.name() == 'REJECTED'}" class="badge-rejected">✗ REJECTED</span>
+                                        </div>
+                                    </td>
+                                    <td class="action-links">
+                                        <a class="edit-link" th:href="@{/edit/{id}(id=${act.id})}">Edit</a>
+                                        <a class="delete-link" th:href="@{/delete/{id}(id=${act.id})}" onclick="return confirm('Delete this record?');">Delete</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="db-download-bar"><a th:href="@{/download/word(type='Publication')}" class="btn-download">⬇ Download as Word</a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── AI Fill Modal ─────────────────────────────────────────────────── -->
+    <div id="aiModalOverlay" class="ai-modal-overlay" onclick="closeAiModalOnBg(event)">
+        <div class="ai-modal">
+            <h3>✨ AI Auto-Fill</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0;">Upload a certificate image or PDF and AI will extract the details for you.</p>
+            <div class="form-group" style="grid-column: 1/-1;">
+                <label>Certificate File</label>
+                <input type="file" id="aiFileInput" accept=".png,.jpg,.jpeg,.pdf" class="file-input">
+            </div>
+            <div class="ai-spinner" id="aiSpinner">⏳ Analyzing certificate...</div>
+            <div class="ai-modal-footer">
+                <button type="button" class="btn-ai-cancel" onclick="closeAiModal()">Cancel</button>
+                <button type="button" class="btn-ai-upload" onclick="submitAiFill()">✨ Extract & Fill</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentAiFormPrefix = null;
+
+        function openAiModal(prefix) {
+            currentAiFormPrefix = prefix;
+            document.getElementById('aiFileInput').value = '';
+            document.getElementById('aiSpinner').style.display = 'none';
+            document.getElementById('aiModalOverlay').classList.add('open');
+        }
+        function closeAiModal() {
+            document.getElementById('aiModalOverlay').classList.remove('open');
+            currentAiFormPrefix = null;
+        }
+        function closeAiModalOnBg(e) {
+            if (e.target === document.getElementById('aiModalOverlay')) closeAiModal();
+        }
+
+        function submitAiFill() {
+            var fileInput = document.getElementById('aiFileInput');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a file first.');
+                return;
+            }
+            document.getElementById('aiSpinner').style.display = 'block';
+            var formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('type', currentAiFormPrefix);
+
+            fetch('/ai/extract', { method: 'POST', body: formData })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Server error');
+                        }
+                        return data;
+                    });
+                })
+                .then(function(data) {
+                    document.getElementById('aiSpinner').style.display = 'none';
+                    autoFillForm(data);
+                    closeAiModal();
+                })
+                .catch(function(err) {
+                    document.getElementById('aiSpinner').style.display = 'none';
+                    closeAiModal();
+                    alert('AI could not process the document: ' + err.message);
+                });
+        }
+
+        function autoFillForm(data) {
+            var p = currentAiFormPrefix;
+            if (!p) return;
+
+            var fieldMap = {
+                'fdp':  { facultyName: 'fdp_facultyName', eventName: 'fdp_title', startDate: 'fdp_date', duration: 'fdp_duration', isNittt: 'nitttCheckFdp', hostInstitute: 'fdp_hostInstitute', location: 'fdp_location' },
+                'ws':   { facultyName: 'ws_facultyName',  eventName: 'ws_title',  startDate: 'ws_date', hostInstitute: 'ws_hostInstitute', location: 'ws_location' },
+                'conf': { facultyName: 'conf_facultyName', eventName: 'conf_title', startDate: 'conf_date', duration: 'conf_duration', hostInstitute: 'conf_hostInstitute', location: 'conf_location' },
+                'pub':  { facultyName: 'pub_facultyName', eventName: 'pub_title', startDate: 'pub_date', journalName: 'pub_journalName', journalType: 'pub_journalType', publicationLevel: 'pub_publicationLevel' }
+            };
+            var map = fieldMap[p];
+            if (!map) return;
+
+            if (data.facultyName && map.facultyName) setVal(map.facultyName, data.facultyName);
+            if (data.eventName   && map.eventName)   setVal(map.eventName,   data.eventName);
+            if (data.startDate   && map.startDate)   setVal(map.startDate,   toInputDate(data.startDate));
+            if (data.duration    && map.duration)    setVal(map.duration,    data.duration);
+            if (data.hostInstitute && map.hostInstitute) setVal(map.hostInstitute, data.hostInstitute);
+            if (data.location      && map.location)      setVal(map.location,      data.location);
+            if (data.journalName   && map.journalName)   setVal(map.journalName,   data.journalName);
+            if (data.journalType   && map.journalType)   setVal(map.journalType,   data.journalType);
+            if (data.publicationLevel && map.publicationLevel) setVal(map.publicationLevel, data.publicationLevel);
+            
+            if (data.isNittt !== undefined && data.isNittt !== null && map.isNittt) {
+                var cb = document.getElementById(map.isNittt);
+                if (cb) cb.checked = (data.isNittt === true || data.isNittt === 'true');
+            }
+        }
+
+        function setVal(id, value) {
+            var el = document.getElementById(id);
+            if (el) el.value = value;
+        }
+
+        function toInputDate(dateStr) {
+            if (!dateStr) return '';
+            // Catch DD/MM/YYYY or DD-MM-YYYY natively first
+            var parts = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+            if (parts) {
+                var d = parts[1].padStart(2, '0');
+                var m = parts[2].padStart(2, '0');
+                var y = parts[3];
+                // Assuming DD/MM/YYYY for Indian certificates
+                if (parseInt(m) > 12 && parseInt(d) <= 12) {
+                    return y + '-' + d + '-' + m;
+                }
+                return y + '-' + m + '-' + d;
+            }
+            try {
+                var obj = new Date(dateStr);
+                if (!isNaN(obj)) {
+                    return obj.toISOString().substring(0, 10);
+                }
+            } catch(e) {}
+            return dateStr;
+        }
+
+        // Tab functions
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        if (document.getElementById("defaultOpen")) { document.getElementById("defaultOpen").click(); }
+
+        function toggleTable(sectionId, btn) {
+            var section = document.getElementById(sectionId);
+            var isVisible = section.style.display !== "none";
+            section.style.display = isVisible ? "none" : "block";
+            btn.innerHTML = isVisible ? "📋 View Database" : "🔼 Hide Database";
+            btn.classList.toggle("active", !isVisible);
+        }
+
+        // Filter logic
+        var filterActive = [];
+        function toggleFilter() {
+            var panel = document.getElementById("filterPanel");
+            panel.style.display = panel.style.display === "none" ? "block" : "none";
+        }
+        function clearFilter() {
+            document.querySelectorAll(".filter-cb").forEach(function (cb) { cb.checked = true; });
+            updateFilterBadge();
+        }
+        function applyFilter() {
+            var selected = [];
+            document.querySelectorAll(".filter-cb:checked").forEach(function (cb) { selected.push(cb.value); });
+            var allVals = ["FDP", "Workshop", "Conference", "Publication"];
+            var isAll = selected.length === 0 || selected.length === allVals.length;
+            var container = document.getElementById("advTypesHidden");
+            container.innerHTML = "";
+            if (!isAll) {
+                selected.forEach(function (val) {
+                    var inp = document.createElement("input");
+                    inp.type = "hidden"; inp.name = "advTypes"; inp.value = val;
+                    container.appendChild(inp);
+                });
+            }
+            filterActive = isAll ? [] : selected;
+            updateFilterBadge();
+            document.getElementById("filterPanel").style.display = "none";
+        }
+        function updateFilterBadge() {
+            var checked = document.querySelectorAll(".filter-cb:checked").length;
+            var badge = document.getElementById("filterBadge");
+            var total = document.querySelectorAll(".filter-cb").length;
+            if (checked < total && checked > 0) {
+                badge.textContent = checked; badge.style.display = "inline-flex";
+            } else { badge.style.display = "none"; }
+        }
+        document.addEventListener("click", function (e) {
+            var panel = document.getElementById("filterPanel");
+            var btn = document.getElementById("filterBtn");
+            if (panel && !panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+                panel.style.display = "none";
+            }
+        });
+    </script>
+</body>
+
+</html>

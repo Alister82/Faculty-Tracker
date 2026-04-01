@@ -1,0 +1,33 @@
+# Dependency directories
+.mvn/
+target/
+bin/
+
+# Compiled files
+*.class
+*.log
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.classpath
+*.project
+*.settings/
+
+# Secret files
+.env
+application-secret.properties
+credentials.json
+
+# System files
+.DS_Store
+Thumbs.db

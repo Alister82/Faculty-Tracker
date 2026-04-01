@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Login - Academic Tracking Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 4rem auto;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            text-decoration: none;
+        }
+        .auth-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container auth-container">
+        <h2 style="text-align: center; margin-bottom: 1rem;">
+            📊 Tracker Login
+        </h2>
+        
+        <div class="auth-tabs">
+            <a href="/login" class="auth-tab active">Login</a>
+            <a href="/register" class="auth-tab">Register</a>
+        </div>
+
+        <div class="card">
+            <div th:if="${param.error}" class="badge badge-red" style="display: block; text-align: center; margin-bottom: 1rem; padding: 0.75rem;">
+                Invalid username or password.
+            </div>
+            <div th:if="${param.logout}" class="badge badge-green" style="display: block; text-align: center; margin-bottom: 1rem; padding: 0.75rem;">
+                You have been logged out.
+            </div>
+            <div th:if="${param.registered}" class="badge badge-green" style="display: block; text-align: center; margin-bottom: 1rem; padding: 0.75rem;">
+                Registration successful! Please login.
+            </div>
+            <div th:if="${param.firstlogin}" class="badge badge-yellow" style="display: block; text-align: center; margin-bottom: 1rem; padding: 0.75rem;">
+                Existing faculty: Your username is your exact name from the records.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Username (or your faculty name)" autofocus required>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                    <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Default password for auto-generated accounts is <b>Welcome@123</b></small>
+                </div>
+
+                <button type="submit" style="width: 100%; margin-top: 1rem;">Sign In</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

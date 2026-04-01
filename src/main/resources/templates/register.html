@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Register - Academic Tracking Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 4rem auto;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            text-decoration: none;
+        }
+        .auth-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container auth-container">
+        <h2 style="text-align: center; margin-bottom: 1rem;">
+            🎓 Faculty Registration
+        </h2>
+        
+        <div class="auth-tabs">
+            <a href="/login" class="auth-tab">Login</a>
+            <a href="/register" class="auth-tab active">Register</a>
+        </div>
+
+        <div class="card">
+            <div th:if="${error}" class="badge badge-red" style="display: block; text-align: center; margin-bottom: 1rem; padding: 0.75rem;" th:text="${error}">
+            </div>
+
+            <form th:action="@{/register}" method="post">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="username">Username (Unique)</label>
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Optional but recommended">
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="roleType">Role</label>
+                    <select id="roleType" name="roleType" required>
+                        <option value="FACULTY">Faculty</option>
+                        <option value="HOD">Head of Department (HOD)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="department">Department</label>
+                    <select id="department" name="department" required>
+                        <option value="Computer">Computer</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Mechanical">Mechanical</option>
+                        <option value="Civil">Civil</option>
+                        <option value="IT">IT</option>
+                        <option value="Science & Humanities">Science & Humanities</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Create a password" required>
+                </div>
+
+                <button type="submit" style="width: 100%; margin-top: 1rem;">Create Account</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

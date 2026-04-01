@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Edit Activity</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .ai-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .ai-modal-overlay.open { display: flex; }
+        .ai-modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; width: 100%; max-width: 420px; }
+        .ai-modal h3 { margin-top: 0; }
+        .ai-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+        .btn-ai-fill { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.1rem; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+        .btn-ai-upload { background: var(--primary); color: #fff; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-ai-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; }
+        .ai-spinner { display: none; text-align: center; color: var(--text-muted); margin-top: 0.75rem; }
+        .badge-pending { background: #422006; color: #fbbf24; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
+        .badge-approved { background: #14532d; color: #4ade80; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
+        .badge-rejected { background: #450a0a; color: #f87171; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; }
+        .status-select { font-size: 0.88rem; padding: 0.3rem 0.6rem; border-radius: 6px; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); }
+    </style>
+</head>
+
+<body>
+    <div class="card edit-card">
+        <h2>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="color: var(--primary);">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit Record
+            <span class="badge badge-primary" th:text="${newActivity.activityType}" style="margin-left: 0.5rem; transform: translateY(-2px);"></span>
+        </h2>
+
+        <!-- Status display -->
+        <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Approval Status:</span>
+            <!-- Faculty view: read-only badge -->
+            <div th:unless="${isHod}">
+                <span th:if="${newActivity.status == null}" class="badge-pending">PENDING</span>
+                <span th:if="${newActivity.status != null and newActivity.status.name() == 'PENDING'}" class="badge-pending">PENDING</span>
+                <span th:if="${newActivity.status != null and newActivity.status.name() == 'APPROVED'}" class="badge-approved">✓ APPROVED</span>
+                <span th:if="${newActivity.status != null and newActivity.status.name() == 'REJECTED'}" class="badge-rejected">✗ REJECTED</span>
+            </div>
+            <!-- HOD view: change status inline -->
+            <div th:if="${isHod}">
+                <form th:action="@{/updateStatus/{id}(id=${newActivity.id})}" method="post" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <select name="status" class="status-select">
+                        <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${newActivity.status == s}"></option>
+                    </select>
+                    <button type="submit" style="padding: 0.3rem 0.8rem; border-radius: 6px; background: var(--primary); color:#fff; border:none; cursor:pointer; font-size: 0.85rem;">Update Status</button>
+                </form>
+            </div>
+        </div>
+
+        <form th:action="@{/save}" th:object="${newActivity}" method="post" enctype="multipart/form-data">
+            <input type="hidden" th:field="*{id}">
+            <input type="hidden" th:field="*{activityType}">
+
+            <!-- FDP Section -->
+            <div th:if="${newActivity.activityType == 'FDP'}">
+                <div class="form-grid">
+                    <div th:if="${isHod}" class="form-group"><label>Faculty / Resource Person</label><input type="text" th:field="*{facultyName}" id="edit_fdp_facultyName"></div>
+                    <div class="form-group"><label>FDP Title</label><input type="text" th:field="*{title}" id="edit_fdp_title" required></div>
+                    <div class="form-group"><label>Host Institute</label><input type="text" th:field="*{hostInstitute}" id="edit_fdp_hostInstitute" required></div>
+                    <div class="form-group"><label>Date</label><input type="date" th:field="*{date}" id="edit_fdp_date" required></div>
+                    <div class="form-group"><label>Host Place</label><input type="text" th:field="*{location}" id="edit_fdp_location" required></div>
+                    <div class="form-group"><label>Duration</label><input type="text" th:field="*{duration}" id="edit_fdp_duration" required></div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Update Certificate (Leave blank to keep existing)</label>
+                        <input type="file" name="certificateFile" class="file-input" accept="image/*,application/pdf">
+                    </div>
+                    <div class="checkbox-container" style="grid-column: 1 / -1; margin-top: 0.5rem;">
+                        <input type="checkbox" id="editNittt" th:field="*{nitttCertified}" value="true">
+                        <label for="editNittt" style="text-transform: none; color: var(--text-main);">NITTT Certified FDP</label>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn-ai-fill" onclick="openAiModal('fdp')">✨ AI Fill</button>
+                </div>
+            </div>
+
+            <!-- Workshop Section -->
+            <div th:if="${newActivity.activityType == 'Workshop'}">
+                <div class="form-grid">
+                    <div th:if="${isHod}" class="form-group"><label>Faculty Name</label><input type="text" th:field="*{facultyName}" id="edit_ws_facultyName"></div>
+                    <div class="form-group"><label>Workshop Title</label><input type="text" th:field="*{title}" id="edit_ws_title" required></div>
+                    <div class="form-group"><label>Date</label><input type="date" th:field="*{date}" id="edit_ws_date" required></div>
+                    <div class="form-group"><label>Location/Venue</label><input type="text" th:field="*{location}" id="edit_ws_location" required></div>
+                    <div class="form-group"><label>Host Institute</label><input type="text" th:field="*{hostInstitute}" id="edit_ws_hostInstitute" required></div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Update Certificate (Leave blank to keep existing)</label>
+                        <input type="file" name="certificateFile" class="file-input" accept="image/*,application/pdf">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn-ai-fill" onclick="openAiModal('ws')">✨ AI Fill</button>
+                </div>
+            </div>
+
+            <!-- Conference Section -->
+            <div th:if="${newActivity.activityType == 'Conference'}">
+                <div class="form-grid">
+                    <div th:if="${isHod}" class="form-group"><label>Faculty Name</label><input type="text" th:field="*{facultyName}" id="edit_conf_facultyName"></div>
+                    <div class="form-group"><label>Conference Title</label><input type="text" th:field="*{title}" id="edit_conf_title" required></div>
+
+                    <div class="form-group"><label>Date</label><input type="date" th:field="*{date}" id="edit_conf_date" required></div>
+                    <div class="form-group"><label>Duration</label><input type="text" th:field="*{duration}" id="edit_conf_duration" required></div>
+                    <div class="form-group"><label>Host Institute</label><input type="text" th:field="*{hostInstitute}" id="edit_conf_hostInstitute" required></div>
+                    <div class="form-group"><label>Location</label><input type="text" th:field="*{location}" id="edit_conf_location" required></div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Update Certificate (Leave blank to keep existing)</label>
+                        <input type="file" name="certificateFile" class="file-input" accept="image/*,application/pdf">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn-ai-fill" onclick="openAiModal('conf')">✨ AI Fill</button>
+                </div>
+            </div>
+
+            <!-- Publication Section -->
+            <div th:if="${newActivity.activityType == 'Publication'}">
+                <div class="form-grid">
+                    <div th:if="${isHod}" class="form-group"><label>Faculty Name</label><input type="text" th:field="*{facultyName}" id="edit_pub_facultyName"></div>
+                    <div class="form-group"><label>Paper Title</label><input type="text" th:field="*{title}" id="edit_pub_title" required></div>
+
+                    <div class="form-group"><label>Journal Name</label><input type="text" th:field="*{journalName}" id="edit_pub_journalName" required></div>
+                    <div class="form-group"><label>Date</label><input type="date" th:field="*{date}" id="edit_pub_date" required></div>
+                    <div class="form-group"><label>Journal Type</label>
+                        <select th:field="*{journalType}" id="edit_pub_journalType" required>
+                            <option value="SC">SC</option>
+                            <option value="Book Chapter">Book Chapter</option>
+                            <option value="UGC">UGC</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Level</label>
+                        <select th:field="*{publicationLevel}" id="edit_pub_publicationLevel" required>
+                            <option value="National">National</option>
+                            <option value="International">International</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn-ai-fill" onclick="openAiModal('pub')">✨ AI Fill</button>
+                </div>
+            </div>
+
+            <button type="submit" style="width: 100%; margin-top: 1.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Update Activity Record
+            </button>
+        </form>
+
+        <a href="/" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Cancel and return to Dashboard
+        </a>
+    </div>
+
+    <!-- AI Modal -->
+    <div id="aiModalOverlay" class="ai-modal-overlay" onclick="closeAiModalOnBg(event)">
+        <div class="ai-modal">
+            <h3>✨ AI Auto-Fill</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top:0;">Upload a certificate and AI will extract the details.</p>
+            <div class="form-group" style="grid-column:1/-1;">
+                <label>Certificate File</label>
+                <input type="file" id="aiFileInput" accept=".png,.jpg,.jpeg,.pdf" class="file-input">
+            </div>
+            <div class="ai-spinner" id="aiSpinner">⏳ Analyzing certificate...</div>
+            <div class="ai-modal-footer">
+                <button type="button" class="btn-ai-cancel" onclick="closeAiModal()">Cancel</button>
+                <button type="button" class="btn-ai-upload" onclick="submitAiFill()">✨ Extract & Fill</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentAiFormPrefix = null;
+
+        function openAiModal(prefix) {
+            currentAiFormPrefix = prefix;
+            document.getElementById('aiFileInput').value = '';
+            document.getElementById('aiSpinner').style.display = 'none';
+            document.getElementById('aiModalOverlay').classList.add('open');
+        }
+        function closeAiModal() {
+            document.getElementById('aiModalOverlay').classList.remove('open');
+        }
+        function closeAiModalOnBg(e) {
+            if (e.target === document.getElementById('aiModalOverlay')) closeAiModal();
+        }
+        function submitAiFill() {
+            var fileInput = document.getElementById('aiFileInput');
+            if (!fileInput.files || fileInput.files.length === 0) { alert('Please select a file.'); return; }
+            document.getElementById('aiSpinner').style.display = 'block';
+            var formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('type', currentAiFormPrefix);
+
+            fetch('/ai/extract', { method: 'POST', body: formData })
+                .then(function(r) { 
+                    return r.json().then(function(data) {
+                        if (!r.ok) throw new Error(data.error || 'Server error');
+                        return data;
+                    });
+                })
+                .then(function(data) {
+                    document.getElementById('aiSpinner').style.display = 'none';
+                    autoFillForm(data);
+                    closeAiModal();
+                })
+                .catch(function(err) {
+                    document.getElementById('aiSpinner').style.display = 'none';
+                    closeAiModal();
+                    alert('AI could not process the document: ' + err.message);
+                });
+        }
+        function autoFillForm(data) {
+            var p = currentAiFormPrefix;
+            var fieldMap = {
+                'fdp':  { facultyName: 'edit_fdp_facultyName', eventName: 'edit_fdp_title', startDate: 'edit_fdp_date', duration: 'edit_fdp_duration', isNittt: 'editNittt', hostInstitute: 'edit_fdp_hostInstitute', location: 'edit_fdp_location' },
+                'ws':   { facultyName: 'edit_ws_facultyName',  eventName: 'edit_ws_title',  startDate: 'edit_ws_date', hostInstitute: 'edit_ws_hostInstitute', location: 'edit_ws_location' },
+                'conf': { facultyName: 'edit_conf_facultyName', eventName: 'edit_conf_title', startDate: 'edit_conf_date', duration: 'edit_conf_duration', hostInstitute: 'edit_conf_hostInstitute', location: 'edit_conf_location' },
+                'pub':  { facultyName: 'edit_pub_facultyName', eventName: 'edit_pub_title', startDate: 'edit_pub_date', journalName: 'edit_pub_journalName', journalType: 'edit_pub_journalType', publicationLevel: 'edit_pub_publicationLevel' }
+            };
+            var map = fieldMap[p];
+            if (!map) return;
+            if (data.facultyName && map.facultyName) setVal(map.facultyName, data.facultyName);
+            if (data.eventName   && map.eventName)   setVal(map.eventName,   data.eventName);
+            if (data.startDate   && map.startDate)   setVal(map.startDate,   toInputDate(data.startDate));
+            if (data.duration    && map.duration)    setVal(map.duration,    data.duration);
+            if (data.hostInstitute && map.hostInstitute) setVal(map.hostInstitute, data.hostInstitute);
+            if (data.location      && map.location)      setVal(map.location,      data.location);
+            if (data.journalName   && map.journalName)   setVal(map.journalName,   data.journalName);
+            if (data.journalType   && map.journalType)   setVal(map.journalType,   data.journalType);
+            if (data.publicationLevel && map.publicationLevel) setVal(map.publicationLevel, data.publicationLevel);
+            if (data.isNittt !== undefined && data.isNittt !== null && map.isNittt) {
+                var cb = document.getElementById(map.isNittt);
+                if (cb) cb.checked = (data.isNittt === true || data.isNittt === 'true');
+            }
+        }
+        function setVal(id, value) { var el = document.getElementById(id); if (el) el.value = value; }
+        function toInputDate(dateStr) {
+            if (!dateStr) return '';
+            var parts = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+            if (parts) {
+                var d = parts[1].padStart(2, '0');
+                var m = parts[2].padStart(2, '0');
+                var y = parts[3];
+                if (parseInt(m) > 12 && parseInt(d) <= 12) { return y + '-' + d + '-' + m; }
+                return y + '-' + m + '-' + d;
+            }
+            try { var obj = new Date(dateStr); if (!isNaN(obj)) return obj.toISOString().substring(0,10); } catch(e) {}
+            return dateStr;
+        }
+    </script>
+</body>
+
+</html>

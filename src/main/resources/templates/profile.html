@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Profile - Academic Tracking Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 3rem auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .info-group {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
+            display: block;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .badge-role {
+            background: #1e3a8a;
+            color: #93c5fd;
+            padding: 0.3rem 0.8rem;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-dept {
+            background: #374151;
+            color: #d1d5db;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .password-masked {
+            font-family: monospace;
+            letter-spacing: 3px;
+            font-size: 1.4rem;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+
+<body>
+    <div style="padding: 0 1.5rem;">
+        <div class="profile-header">
+            <h2 style="display: flex; align-items: center; gap: 0.75rem; margin: 0;">
+                <span>👤 My Profile</span>
+            </h2>
+            <a href="/" class="btn-clear" style="font-size: 0.95rem; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <div th:if="${param.success}" class="badge badge-green" style="max-width: 900px; margin: 0 auto 1.5rem auto; display: block; text-align: center; padding: 1rem; font-size: 1rem;">
+            ✅ Profile settings updated successfully!
+        </div>
+
+        <div th:if="${error}" class="badge badge-red" style="max-width: 900px; margin: 0 auto 1.5rem auto; display: block; text-align: center; padding: 1rem; font-size: 1rem;" th:text="${error}">
+        </div>
+
+        <div th:if="${user != null and user.mustChangePassword}" class="card" style="max-width: 900px; margin: 0 auto 1.5rem auto; border-left: 5px solid #f59e0b; background: rgba(245, 158, 11, 0.1);">
+            <h3 style="color: #f59e0b; margin-top: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Action Required
+            </h3>
+            <p style="color: var(--text-main); margin-bottom: 0; font-size: 0.95rem;">
+                You are currently using an auto-generated password. You must set a new password to secure your account before you can access the dashboard.
+            </p>
+        </div>
+
+        <div class="profile-container" th:if="${user != null}">
+            
+            <!-- Left Column: Profile Card -->
+            <div class="card" style="height: fit-content;">
+                <div class="avatar-circle" th:text="${#strings.substring(user.username,0,1).toUpperCase()}">U</div>
+                
+                <h2 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem;" th:text="${user.username}">Username</h2>
+                
+                <div class="info-group">
+                    <span class="info-label">Role</span>
+                    <span class="badge-role" th:text="${user.role}">ROLE</span>
+                </div>
+                
+                <div class="info-group">
+                    <span class="info-label">Department</span>
+                    <span class="badge-dept" th:text="${user.department}">Department</span>
+                </div>
+                
+                <div class="info-group">
+                    <span class="info-label">Email Address</span>
+                    <div class="info-value" th:if="${user.email != null}" th:text="${user.email}">user@example.com</div>
+                    <div th:if="${user.email == null}" style="color: #6b7280; font-style: italic; font-size: 0.95rem;">No email linked</div>
+                </div>
+
+                <div class="info-group">
+                    <span class="info-label">Password</span>
+                    <div class="password-masked">••••••••••</div>
+                </div>
+            </div>
+
+            <!-- Right Column: Settings Form -->
+            <div class="card" style="height: fit-content;">
+                <h3 style="margin-top: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    Update Settings
+                </h3>
+
+                <form th:action="@{/profile/update}" method="post">
+                    <div class="form-group">
+                        <label for="email">Email Address <span style="color: var(--text-muted); font-weight: normal; font-size: 0.85rem;">(Optional)</span></label>
+                        <input type="email" id="email" name="email" th:value="${user.email}" placeholder="your.email@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Change Password 
+                            <span th:if="${user.mustChangePassword}" style="color: #f87171; font-weight: normal; font-size: 0.85rem;">(Required)</span>
+                        </label>
+                        <input type="password" id="password" name="password" 
+                               th:placeholder="${user.mustChangePassword ? 'Enter a new password' : 'Leave blank if you do not want to change'}" 
+                               th:required="${user.mustChangePassword}">
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button type="submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                            Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>
