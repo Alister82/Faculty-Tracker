@@ -107,7 +107,8 @@ label {
 }
 
 input[type="text"], 
-input[type="date"], 
+input[type="date"],
+input[type="password"],
 select {
     padding: 0.625rem 0.875rem;
     border: 1px solid var(--border);

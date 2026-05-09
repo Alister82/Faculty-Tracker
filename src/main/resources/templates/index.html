@@ -93,7 +93,7 @@
                     <input type="hidden" name="searchType" value="method2">
                     <div id="advTypesHidden"></div>
                     <div class="search-form-group" style="margin-bottom: 0.75rem;">
-                        <div><input type="text" name="advFaculty" placeholder="Faculty Name"></div>
+                        <div th:if="${isHod}"><input type="text" name="advFaculty" placeholder="Faculty Name"></div>
                         <div><input type="text" name="advYear" placeholder="Year (e.g. 2026)"></div>
                     </div>
                     <div class="adv-bottom-row">
@@ -152,7 +152,22 @@
                             <td th:text="${act.facultyName}" style="font-weight: 500; color: var(--text-main);"></td>
                             <td th:text="${act.title}"></td>
                             <td th:text="${act.date}"></td>
-                            <td th:include="this :: statusCell(${act})"></td>
+                            <td>
+                                <div th:if="${isHod}">
+                                    <form th:action="@{/updateStatus/{id}(id=${act.id})}" method="post" class="status-form">
+                                        <select name="status" class="status-select">
+                                            <option th:each="s : ${approvalStatuses}" th:value="${s}" th:text="${s}" th:selected="${act.status == s}"></option>
+                                        </select>
+                                        <button type="submit" class="btn-status">✓</button>
+                                    </form>
+                                </div>
+                                <div th:unless="${isHod}">
+                                    <span th:if="${act.status == null}" class="badge-pending">PENDING</span>
+                                    <span th:if="${act.status != null and act.status.name() == 'PENDING'}" class="badge-pending">PENDING</span>
+                                    <span th:if="${act.status != null and act.status.name() == 'APPROVED'}" class="badge-approved">✓ APPROVED</span>
+                                    <span th:if="${act.status != null and act.status.name() == 'REJECTED'}" class="badge-rejected">✗ REJECTED</span>
+                                </div>
+                            </td>
                             <td class="action-links">
                                 <a th:if="${act.certificateUrl != null and !act.certificateUrl.isEmpty()}" th:href="${act.certificateUrl}" target="_blank" class="view-cert-link">☁️ View Cert</a>
                                 <a class="edit-link" th:href="@{/edit/{id}(id=${act.id})}">Edit</a>

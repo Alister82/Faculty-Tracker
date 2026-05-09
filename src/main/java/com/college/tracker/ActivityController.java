@@ -76,7 +76,8 @@ public class ActivityController {
                     .collect(Collectors.toList());
             isSearch = true;
         } else if ("method2".equals(searchType)) {
-            String f = (advFaculty != null) ? advFaculty : "";
+            // Faculty role: ignore advFaculty to prevent URL-crafting bypass
+            String f = (isHod || isAdmin) ? (advFaculty != null ? advFaculty : "") : "";
             String y = (advYear != null) ? advYear : "";
             Boolean n = (advNittt != null && advNittt) ? true : null;
             List<Activity> raw;

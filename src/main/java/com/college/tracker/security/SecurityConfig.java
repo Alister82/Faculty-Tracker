@@ -26,6 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .authenticationProvider(authenticationProvider()) // ✅ Wire our custom provider
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/register", "/css/**", "/images/**").permitAll()
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
@@ -34,7 +35,9 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
+                .loginProcessingUrl("/login") // ✅ Explicit POST handler URL
                 .successHandler(customAuthenticationSuccessHandler())
+                .failureUrl("/login?error")   // ✅ Explicit failure redirect
                 .permitAll()
             )
             .logout(logout -> logout
